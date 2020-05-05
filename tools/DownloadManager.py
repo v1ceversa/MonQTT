@@ -1,6 +1,7 @@
 import os
 import datetime
 import paramiko
+from threading import Thread
 
 download_path = '/home/v1ceversa/Videos/'
 
@@ -20,9 +21,9 @@ class DownloadVerbose:
         self.prev_time = time
 
 
-class DownloadManager:
+class DownloadManager(Thread):
 
-    def __init__(self, host, semaphore):
+    def __init__(self, host):
         # SFTP server connection
         if not os.path.exists(download_path):
             os.mkdir(download_path)
@@ -30,10 +31,16 @@ class DownloadManager:
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(host, username='pi', password='cntgfyrbpbv')
         self.sftp = ssh.open_sftp()
-        self.semaphore = semaphore
+        self.is_interrupted = False
 
-    def set_semaphore(self,semaphore):
-        self.semaphore = semaphore
+    def interrupt(self):
+        self.is_interrupted = True
+
+    def run(self):
+        self.is_interrupted = False
+        while(True):
+            if self.is_interrupted:
+                break
 
     def download_file(self, file_name):
         if os.path.isfile(download_path + file_name):
