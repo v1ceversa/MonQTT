@@ -4,14 +4,38 @@ import cv2
 import time
 
 default_video = 'test.mp4'
+download_path = '/home/pi/Videos/'
+
+
+class Player(Thread):
+    def __init__(self, file_name=default_video):
+        self.file_name = file_name
+        self.kill = False
+
+    def interrupt(self):
+        self.kill = True
+
+    def run(self):
+        self.kill = False
+        cap = cv2.VideoCapture(download_path + self.file_name)
+        # play video
+        while (True):
+            # Capture frame-by-frame
+            ret, frame = cap.read()
+
+            # Display the resulting frame
+            cv2.imshow('frame', frame)
+            if (cv2.waitKey(1) & 0xFF == ord('q')) | self.kill:
+                break
+        cap.release()
+        cv2.destroyAllWindows()
+
 
 class MediaPlayer(Thread):
 
     def __init__(self, schedule, new_schedule_event):
         self.new_schedule_event = new_schedule_event
         self.schedule = schedule
-        self.download_manager = DownloadManager(self.schedule)
-        self.download_path = '/home/pi/Videos/'
 
     def __get_init_point(self, slot):
         landing = self.schedule.get_landing()
@@ -39,46 +63,50 @@ class MediaPlayer(Thread):
             return default_video
 
     def run(self):
-        def play_video():
-            global stop
-            cap = cv2.VideoCapture(self.download_path + file_name)
-            # play video
-            while (True):
-                # Capture frame-by-frame
-                ret, frame = cap.read()
-
-                # Display the resulting frame
-                cv2.imshow('frame', frame)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-            cap.release()
-            cv2.destroyAllWindows()
-
-        self.download_manager.start()
+        download_manager = DownloadManager(self.schedule)
+        download_manager.start()
         landing = self.schedule.get_landing()
         prev_file_name = default_video
-        file_name = default_video
-        slot = time.time() % landing['step'] + 1
+        slot = int(time.time() / landing['step']) + 1
         point = self.get_init_point(slot)
-
+        player = Player()
+        player.start()
         while True:
             if self.new_schedule_event.is_set():
                 self.new_schedule_event.clear()
-                self.download_manager.interrupt()
-                self.download_manager.join()
-                self.download_manager.start()
 
-            videos = landing['videos']
-            file_name = MediaPlayer.get_file_name(slot=slot, point_video=videos[point])
+                download_manager.interrupt()
+                download_manager.join()
+                download_manager = DownloadManager(self.schedule)
+                download_manager.start()
+
+                landing = self.schedule.get_landing()
+                slot = int(time.time() / landing['step']) + 1
+                point = self.get_init_point(slot)
+
+                player.interrupt()
+                player.join()
+                player = Player()
+                player.start()
+
+            file_name = MediaPlayer.get_file_name(slot=slot, point_video=landing['videos'][point])
+
             if prev_file_name != file_name:
-                Thread.start(target=play_video)
-            prev_file_name = file_name
+                is_acquire = self.schedule.acquire()
+                #TODO STAND BY MODE
+                if is_acquire:
+                    player.interrupt()
+                    player.join()
+                    player = Player(file_name=file_name)
+                    player.start()
+                    prev_file_name = file_name
 
-            landing = self.schedule.get_landing()
-            slot = time.time() % landing['step'] + 1
-            point = MediaPlayer.get_point(slot)
 
-        self.download_manager.join()
+            slot = int(time.time() / landing['step']) + 1
+            point = MediaPlayer.get_point(slot=slot, cur_point=point)
+
+        download_manager.interrupt()
+        download_manager.join()
 
 
 
