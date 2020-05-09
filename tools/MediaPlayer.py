@@ -37,6 +37,7 @@ class MediaPlayer(Thread):
         self.new_schedule_event = new_schedule_event
         self.schedule = schedule
 
+
     def __get_init_point(self, slot):
         landing = self.schedule.get_landing()
         videos = landing['videos']
@@ -63,7 +64,7 @@ class MediaPlayer(Thread):
             return default_video
 
     def run(self):
-        download_manager = DownloadManager(self.schedule)
+        download_manager = DownloadManager(schedule=self.schedule)
         download_manager.start()
         landing = self.schedule.get_landing()
         prev_file_name = default_video
@@ -71,13 +72,14 @@ class MediaPlayer(Thread):
         point = self.get_init_point(slot)
         player = Player()
         player.start()
+        is_stand_by = True
         while True:
             if self.new_schedule_event.is_set():
                 self.new_schedule_event.clear()
 
                 download_manager.interrupt()
                 download_manager.join()
-                download_manager = DownloadManager(self.schedule)
+                download_manager = DownloadManager(schedule=self.schedule)
                 download_manager.start()
 
                 landing = self.schedule.get_landing()
@@ -93,14 +95,20 @@ class MediaPlayer(Thread):
 
             if prev_file_name != file_name:
                 is_acquire = self.schedule.acquire()
-                #TODO STAND BY MODE
+
                 if is_acquire:
+                    is_stand_by = False
                     player.interrupt()
                     player.join()
                     player = Player(file_name=file_name)
                     player.start()
                     prev_file_name = file_name
-
+                elif not is_stand_by:
+                    is_stand_by = True
+                    player.interrupt()
+                    player.join()
+                    player = Player()
+                    player.start()
 
             slot = int(time.time() / landing['step']) + 1
             point = MediaPlayer.get_point(slot=slot, cur_point=point)
