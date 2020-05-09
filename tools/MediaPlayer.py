@@ -1,4 +1,4 @@
-from threading import Thread, Event, Semaphore
+from threading import Thread
 from . import DownloadManager
 import cv2
 import time
@@ -36,7 +36,6 @@ class MediaPlayer(Thread):
     def __init__(self, schedule, new_schedule_event):
         self.new_schedule_event = new_schedule_event
         self.schedule = schedule
-
 
     def __get_init_point(self, slot):
         landing = self.schedule.get_landing()
