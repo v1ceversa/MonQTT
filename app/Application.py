@@ -1,10 +1,8 @@
-import os
+
 from tools import MqttWrapper
 
 host = '#.#.#.#'
 
-if not os.path.exists(download_path):
-    os.mkdir(download_path)
 
 
 # set up MQTT communication
