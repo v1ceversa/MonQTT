@@ -4,7 +4,7 @@ import paramiko
 from threading import Thread
 
 download_path = '/home/v1ceversa/Videos/'
-
+host='#.#.#.#'
 
 class DownloadVerbose:
     def __init__(self):
@@ -23,7 +23,7 @@ class DownloadVerbose:
 
 class DownloadManager(Thread):
 
-    def __init__(self, host, schedule):
+    def __init__(self, schedule):
         # SFTP server connection
         if not os.path.exists(download_path):
             os.mkdir(download_path)

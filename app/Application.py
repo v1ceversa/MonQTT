@@ -1,4 +1,3 @@
-
 from tools import MqttWrapper
 
 host = '#.#.#.#'

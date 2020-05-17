@@ -1,14 +1,12 @@
 import datetime
 import paho.mqtt.client as mqtt
-import cv2
-from pymediainfo import MediaInfo
-from .DownloadManager import DownloadManager
+from entities import Schedule
+from .MediaPlayer import TaskManager
 
 
 class MqttWrapper:
     def __init__(self, client_id, host, port=1883, keep_alive=60):
         self.client = mqtt.Client(client_id)
-        self.manager = DownloadManager(host=host)
         # Setting callbacks
         self.client.on_connect = self._on_connect_callback
         self.client.on_disconnect = self._on_disconnect_callback
@@ -16,8 +14,9 @@ class MqttWrapper:
         self.client.on_publish = self._on_publish_callback
         self.client.on_subscribe = self._on_subscribe_callback
         self.client.on_unsubscribe = self._on_unsubscribe_callback
-
         self.client.connect(host, port, keep_alive)
+        self.schedule = Schedule()
+        self.task_manager = TaskManager(self.schedule)
 
     # callbacks
     @staticmethod
@@ -30,14 +29,9 @@ class MqttWrapper:
 
     def _on_message_callback(self, client, userdata, message):
         print(f'Got message {message.payload} from tube {message.topic}')
-        file_name = str(message.payload, 'utf-8')
-        self.manager.download_file(file_name)
+        landing = str(message.payload, 'utf-8')
+        self.schedule.set_landing(landing)
 
-        # reading video duration
-        info = MediaInfo.parse(self.download_path + file_name)
-        print(
-            "Downloaded {0} with duration {1}".format(file_name,
-                                                      datetime.timedelta(milliseconds=info.tracks[0].duration)))
 
 
 
