@@ -1,14 +1,15 @@
 from threading import Thread
-from . import DownloadManager
+from .DownloadManager import DownloadManager
 import time
 import cv2
 
 default_video = 'test.mp4'
-download_path = '/home/pi/Videos/'
+download_path = '/home/v1ceversa/Videos/'
 
 
 class MediaPlayer(Thread):
     def __init__(self, file_name=default_video):
+        Thread.__init__(self)
         self.file_name = file_name
         self.kill = False
 
@@ -22,9 +23,14 @@ class MediaPlayer(Thread):
         while (True):
             # Capture frame-by-frame
             ret, frame = cap.read()
+            if ret:
+                cv2.imshow("Image", frame)
+            else:
+                print('no video')
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
             # Display the resulting frame
-            cv2.imshow('frame', frame)
+            #cv2.imshow('frame', frame)
             if (cv2.waitKey(1) & 0xFF == ord('q')) | self.kill:
                 break
         cap.release()
@@ -34,6 +40,7 @@ class MediaPlayer(Thread):
 class TaskManager(Thread):
 
     def __init__(self, schedule):
+        Thread.__init__(self)
         self.schedule = schedule
 
     def __get_init_point(self, slot):
@@ -56,18 +63,18 @@ class TaskManager(Thread):
 
     @staticmethod
     def __get_file_name(slot, point_video):
-        if TaskManager.is_slot_in_point(slot=slot, point_video=point_video):
+        if TaskManager.__is_slot_in_point(slot=slot, point_video=point_video):
             return point_video['link']
         else:
             return default_video
 
     def run(self):
-        download_manager = DownloadManager(schedule=self.schedule)
-        download_manager.start()
+        #download_manager = DownloadManager(schedule=self.schedule)
+        #download_manager.start()
         landing = self.schedule.get_landing()
         prev_file_name = default_video
         slot = int(time.time() / landing['step']) + 1
-        point = self.get_init_point(slot)
+        point = self.__get_init_point(slot)
         player = MediaPlayer()
         player.start()
         is_stand_by = True
@@ -87,7 +94,7 @@ class TaskManager(Thread):
                 player = MediaPlayer()
                 player.start()
 
-            file_name = TaskManager.get_file_name(slot=slot, point_video=landing['videos'][point])
+            file_name = TaskManager.__get_file_name(slot=slot, point_video=landing['videos'][point])
 
             if prev_file_name != file_name:
                 is_acquire = self.schedule.acquire()
@@ -107,7 +114,7 @@ class TaskManager(Thread):
                     player.start()
 
             slot = int(time.time() / landing['step']) + 1
-            point = TaskManager.get_point(slot=slot, cur_point=point)
+            point = TaskManager.__get_point(slot=slot, cur_point=point)
 
         download_manager.interrupt()
         download_manager.join()

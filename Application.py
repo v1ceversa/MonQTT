@@ -1,6 +1,6 @@
-from tools import MqttWrapper
+from tools.MqttWrapper import MqttWrapper
 
-host = '#.#.#.#'
+host = '167.172.169.242'
 
 
 

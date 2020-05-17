@@ -4,7 +4,7 @@ import paramiko
 from threading import Thread
 
 download_path = '/home/v1ceversa/Videos/'
-host='#.#.#.#'
+host='127.0.0.1'
 
 class DownloadVerbose:
     def __init__(self):
@@ -24,12 +24,13 @@ class DownloadVerbose:
 class DownloadManager(Thread):
 
     def __init__(self, schedule):
+        Thread.__init__(self)
         # SFTP server connection
         if not os.path.exists(download_path):
             os.mkdir(download_path)
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(host, username='pi', password='cntgfyrbpbv')
+        ssh.connect(host, username='v1ceversa', password='an000829')
         self.sftp = ssh.open_sftp()
         self.is_interrupted = False
         self.schedule = schedule

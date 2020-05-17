@@ -1,6 +1,6 @@
 import datetime
 import paho.mqtt.client as mqtt
-from entities import Schedule
+from entities.Schedule import Schedule
 from .MediaPlayer import TaskManager
 
 
@@ -17,6 +17,7 @@ class MqttWrapper:
         self.client.connect(host, port, keep_alive)
         self.schedule = Schedule()
         self.task_manager = TaskManager(self.schedule)
+        self.task_manager.start()
 
     # callbacks
     @staticmethod
