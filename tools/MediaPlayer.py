@@ -69,8 +69,6 @@ class TaskManager(Thread):
             return default_video
 
     def run(self):
-        #download_manager = DownloadManager(schedule=self.schedule)
-        #download_manager.start()
         landing = self.schedule.get_landing()
         prev_file_name = default_video
         slot = int(time.time() / landing['step']) + 1
@@ -82,12 +80,13 @@ class TaskManager(Thread):
             if self.schedule.is_new_schedule():
                 download_manager.interrupt()
                 download_manager.join()
-                download_manager = DownloadManager(schedule=self.schedule)
-                download_manager.start()
+
 
                 landing = self.schedule.get_landing()
                 slot = int(time.time() / landing['step']) + 1
                 point = self.get_init_point(slot)
+                download_manager = DownloadManager(schedule=self.schedule, init_point=point)
+                download_manager.start()
 
                 player.interrupt()
                 player.join()
